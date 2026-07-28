@@ -1,0 +1,30 @@
+services:
+  nginx:
+    image: ${NGINX_IMAGE:-nginx:stable-alpine@sha256:97d490c12ba55b4946b01546d1c3ed324e8d41ab1c9fcb2a616aa470620e5b46}
+    ports:
+      - "127.0.0.1:18080:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - hold-proxy
+
+  hold-proxy:
+    build:
+      context: ../..
+    environment:
+      BACKEND_URL: http://backend:8080
+      READINESS_URL: http://backend:8080/ready
+      HOLD_TIMEOUT: 10s
+      REQUEST_TIMEOUT: 15s
+      HEALTH_INTERVAL: 50ms
+      HEALTH_TIMEOUT: 200ms
+      MAX_HELD_REQUESTS: 10
+      FORWARD_CONCURRENT: 2
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: integration/testbackend/Dockerfile
+    ports:
+      - "127.0.0.1:18081:8080"
